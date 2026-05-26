@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Groups - ServiceDesk Admin</title>
+  <style>
+    /* Global Reset & Design System Constants */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background-color: #ffffff;
+      color: #111827;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+    }
+
+    /* Three Column Layout */
+    .app-container {
+      display: flex;
+      width: 100%;
+      height: 100vh;
+    }
+
+    /* Column 1: Sidebar Nav (170px) */
+    .sidebar {
+      width: 170px;
+      min-width: 170px;
+      background-color: #f9fafb;
+      border-right: 1px solid #e5e7eb;
+      display: flex;
+      flex-direction: column;
+      padding: 16px 0;
+    }
+
+    .brand-section {
+      padding: 0 16px 20px 16px;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-logo {
+      width: 24px;
+      height: 24px;
+      background-color: #16a34a;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .brand-text {
+      font-size: 14px;
+      font-weight: 700;
+      color: #111827;
+    }
+
+    .nav-menu {
+      list-style: none;
+      padding: 16px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      color: #374151;
+      font-size: 13px;
+      font-weight: 500;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .nav-link:hover {
+      background-color: #f3f4f6;
+      color: #111827;
+    }
+
+    .nav-link.active {
+      background-color: #16a34a;
+      color: #ffffff;
+    }
+
+    .nav-link.active:hover {
+      background-color: #16a34a;
+      color: #ffffff;
+    }
+
+    .nav-icon {
+      width: 16px;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    /* Column 2: Main Area (flex: 1) */
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative; /* Anchor for Bottom Form Panel & Toast notifications */
+      overflow: hidden;
+      background-color: #ffffff;
+    }
+
+    .main-body {
+      flex: 1;
+      padding: 24px 32px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Breadcrumbs */
+    .breadcrumbs {
+      font-size: 11px;
+      font-weight: 600;
+      color: #6b7280;
+      display: flex;
+      gap: 6px;
+    }
+
+    .breadcrumbs span.current {
+      color: #111827;
+    }
+
+    /* Title Block */
+    .title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .title-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .page-title {
+      font-size: 18px;
+      font-weight: 500;
+      color: #111827;
+    }
+
+    .page-subtitle {
+      font-size: 13px;
+      color: #6b7280;
+      line-height: 1.5;
+    }
+
+    .btn-create {
+      background-color: #16a34a;
+      color: #ffffff;
+      border: 1px solid #16a34a;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background-color 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .btn-create:hover {
+      background-color: #15803d;
+      border-color: #15803d;
+    }
+
+    /* Groups List Container */
+    .groups-container {
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      background-color: #ffffff;
+    }
+
+    .group-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      border-bottom: 1px solid #e5e7eb;
+      gap: 16px;
+    }
+
+    .group-row:last-child {
+      border-bottom: none;
+    }
+
+    .group-info-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .group-row-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: #111827;
+    }
+
+    .group-row-desc {
+      font-size: 12px;
+      color: #6b7280;
+      line-height: 1.4;
+    }
+
+    .btn-edit-item {
+      background-color: #ffffff;
+      border: 1px solid #e5e7eb;
+      color: #374151;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-edit-item:hover {
+      background-color: #f9fafb;
+      border-color: #cbd5e1;
+      color: #111827;
+    }
+
+    /* Column 3: Right Info Panel (200px) */
+    .info-panel {
+      width: 200px;
+      min-width: 200px;
+      background-color: #ffffff;
+      border-left: 1px solid #e5e7eb;
+      padding: 24px 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .info-section {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .info-header {
+      font-size: 12px;
+      font-weight: 700;
+      color: #111827;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .info-description {
+      font-size: 11px;
+      color: #6b7280;
+      line-height: 1.5;
+    }
+
+    /* Bottom Slide-up Form Drawer */
+    .form-panel {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 330px;
+      background-color: #ffffff;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      flex-direction: column;
+      transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 10;
+    }
+
+    .form-panel.open {
+      transform: translateY(0);
+    }
+
+    .form-header {
+      padding: 16px 32px;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .form-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #111827;
+    }
+
+    .form-body {
+      flex: 1;
+      padding: 20px 32px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px 24px;
+      overflow-y: auto;
+    }
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #374151;
+    }
+
+    .form-label span.req {
+      color: #ef4444;
+      margin-left: 2px;
+    }
+
+    .input-control {
+      width: 100%;
+      padding: 8px 12px;
+      font-size: 13px;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      outline: none;
+      color: #1f2937;
+      background-color: #ffffff;
+      transition: border-color 0.15s ease;
+    }
+
+    .input-control:focus {
+      border-color: #16a34a;
+    }
+
+    .input-control.invalid {
+      border-color: #ef4444 !important;
+    }
+
+    .error-text {
+      font-size: 11px;
+      color: #ef4444;
+      display: none;
+      margin-top: 2px;
+    }
+
+    .checkbox-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      color: #374151;
+      margin-top: auto;
+      padding-bottom: 8px;
+      user-select: none;
+    }
+
+    .checkbox-container input {
+      accent-color: #16a34a;
+      width: 14px;
+      height: 14px;
+    }
+
+    .form-footer {
+      padding: 16px 32px;
+      border-top: 1px solid #e5e7eb;
+      background-color: #f9fafb;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .form-actions-right {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+    }
+
+    .btn-secondary {
+      background-color: #ffffff;
+      border: 1px solid #e5e7eb;
+      color: #374151;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-secondary:hover {
+      background-color: #f9fafb;
+      border-color: #cbd5e1;
+    }
+
+    .btn-danger-action {
+      background-color: #ffffff;
+      border: 1px solid #ef4444;
+      color: #ef4444;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: none; /* Only show when editing */
+    }
+
+    .btn-danger-action:hover {
+      background-color: #fef2f2;
+      color: #dc2626;
+    }
+
+    /* Layout-relative Toast Alerts */
+    .toast-overlay-container {
+      position: absolute;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-50px);
+      z-index: 100;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .toast-overlay-container.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .toast-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 18px;
+      border-radius: 6px;
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .toast-card.success {
+      background-color: #16a34a;
+    }
+
+    .toast-card.delete {
+      background-color: #ef4444;
+    }
+
+    .toast-icon {
+      font-size: 14px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <!-- Column 1: Sidebar -->
+    <aside class="sidebar">
+      <div class="brand-section">
+        <div class="brand-logo">S</div>
+        <span class="brand-text">ServiceDesk</span>
+      </div>
+      <ul class="nav-menu">
+        <li><a class="nav-link"><span class="nav-icon">📊</span>Dashboard</a></li>
+        <li><a class="nav-link"><span class="nav-icon">🎫</span>Tickets</a></li>
+        <li><a class="nav-link"><span class="nav-icon">⚙️</span>Admin</a></li>
+        <li><a class="nav-link active"><span class="nav-icon">👥</span>Groups</a></li>
+        <li><a class="nav-link"><span class="nav-icon">👤</span>Users</a></li>
+        <li><a class="nav-link"><span class="nav-icon">✉️</span>Email Notifications</a></li>
+        <li><a class="nav-link"><span class="nav-icon">💼</span>Workspace Settings</a></li>
+      </ul>
+    </aside>
+
+    <!-- Column 2: Main Area -->
+    <section class="main-content">
+      
+      <!-- Top-centered Toast Notifications Anchor -->
+      <div class="toast-overlay-container" id="toast-wrapper">
+        <!-- Injected via Javascript -->
+      </div>
+
+      <!-- Main Body -->
+      <div class="main-body">
+        
+        <!-- Breadcrumbs -->
+        <nav class="breadcrumbs">
+          <span>MY</span>
+          <span>&rsaquo;</span>
+          <span>My Team</span>
+          <span>&rsaquo;</span>
+          <span class="current">Agent Groups</span>
+        </nav>
+
+        <!-- Header Panel -->
+        <header class="title-row">
+          <div class="title-wrapper">
+            <h1 class="page-title">Agent groups</h1>
+            <p class="page-subtitle">Organize groups, assign teams, and define how requests flow through your workspace.</p>
+          </div>
+          <button class="btn-create" id="btn-add-group">
+            <span>+</span> Create agent group
+          </button>
+        </header>
+
+        <!-- Dynamic Rows List Container -->
+        <div class="groups-container" id="groups-list-wrapper">
+          <!-- Populated dynamically via JS -->
+        </div>
+
+      </div>
+
+      <!-- Drawer Form Slide-up Panel -->
+      <div class="form-panel" id="group-form-drawer">
+        <div class="form-header">
+          <span class="form-title" id="drawer-headline">Create agent group</span>
+        </div>
+
+        <div class="form-body">
+          <!-- Group Name -->
+          <div class="form-field">
+            <label class="form-label" for="txt-name">Group name <span class="req">*</span></label>
+            <input type="text" class="input-control" id="txt-name" placeholder="Enter group name">
+            <span class="error-text" id="lbl-error">Group name is required.</span>
+          </div>
+
+          <!-- Auto Ticket Routing -->
+          <div class="form-field">
+            <label class="form-label" for="ddl-routing">Auto-ticket assignment</label>
+            <select class="input-control" id="ddl-routing">
+              <option value="None">None</option>
+              <option value="Round robin">Round robin</option>
+              <option value="Load balanced">Load balanced</option>
+            </select>
+          </div>
+
+          <!-- Description -->
+          <div class="form-field" style="grid-column: span 2;">
+            <label class="form-label" for="txt-desc">Description</label>
+            <input type="text" class="input-control" id="txt-desc" placeholder="Enter brief coverage details">
+          </div>
+
+          <!-- Restricted Access Checkbox -->
+          <div class="form-field" style="grid-column: span 2;">
+            <label class="checkbox-container" for="chk-restricted">
+              <input type="checkbox" id="chk-restricted">
+              <span>Mark as restricted group</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-footer">
+          <button class="btn-danger-action" id="btn-delete-group">Delete group</button>
+          <div class="form-actions-right">
+            <button class="btn-secondary" id="btn-cancel-drawer">Cancel</button>
+            <button class="btn-create" id="btn-save-drawer">Create group</button>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Column 3: Right Help Panel -->
+    <aside class="info-panel">
+      <div class="info-section">
+        <h4 class="info-header">Groups</h4>
+        <p class="info-description">Organizing agents into specific groups lets you categorize coverage areas and optimize resource distribution.</p>
+      </div>
+
+      <div class="info-section">
+        <h4 class="info-header">Auto-ticket Assignment</h4>
+        <p class="info-description">Route incoming requests using load-balancing or round robin models to coordinate tasks efficiently.</p>
+      </div>
+
+      <div class="info-section">
+        <h4 class="info-header">Working Hours</h4>
+        <p class="info-description">Coordinate specific business hours or holiday periods for each group based on their localized timezones.</p>
+      </div>
+
+      <div class="info-section">
+        <h4 class="info-header">Restricted group</h4>
+        <p class="info-description">Secures private support data by limiting ticket access exclusively to members of the restricted team.</p>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- Vanilla JavaScript Logic -->
+  <script>
+    // State Array
+    let agentGroups = [
+      { id: 1, name: 'First Responders Group', desc: 'Initial requests responders.', routing: 'None', restricted: false },
+      { id: 2, name: 'Change Team', desc: 'Change Management Team', routing: 'None', restricted: false },
+      { id: 3, name: 'Database Team', desc: 'Database Management Team', routing: 'None', restricted: false },
+      { id: 4, name: 'HR Team', desc: 'HR Team', routing: 'None', restricted: false },
+      { id: 5, name: 'Network Support Team', desc: 'Network Support Team', routing: 'None', restricted: false },
+      { id: 6, name: 'Salesforce Team', desc: 'Salesforce Team', routing: 'None', restricted: false },
+      { id: 7, name: 'Security Team', desc: 'Security Team', routing: 'None', restricted: false }
+    ];
+
+    let editGroupMode = false;
+    let activeGroupId = null;
+    let toastTimeout = null;
+
+    // Selector Nodes
+    const groupsListWrapper = document.getElementById('groups-list-wrapper');
+    const formPanelDrawer = document.getElementById('group-form-drawer');
+    const drawerHeadline = document.getElementById('drawer-headline');
+    
+    const inputNameField = document.getElementById('txt-name');
+    const inputDescField = document.getElementById('txt-desc');
+    const selectRoutingField = document.getElementById('ddl-routing');
+    const checkboxRestrictedField = document.getElementById('chk-restricted');
+    
+    const btnAddGroup = document.getElementById('btn-add-group');
+    const btnCancelDrawer = document.getElementById('btn-cancel-drawer');
+    const btnSaveDrawer = document.getElementById('btn-save-drawer');
+    const btnDeleteGroup = document.getElementById('btn-delete-group');
+    
+    const labelError = document.getElementById('lbl-error');
+    const toastWrapper = document.getElementById('toast-wrapper');
+
+    // Render list structure
+    function renderGroupsList() {
+      groupsListWrapper.innerHTML = '';
+      agentGroups.forEach(group => {
+        const row = document.createElement('div');
+        row.className = 'group-row';
+        row.innerHTML = `
+          <div class="group-info-wrapper">
+            <span class="group-row-name">${group.name}</span>
+            <span class="group-row-desc">${group.desc}</span>
+          </div>
+          <button class="btn-edit-item" onclick="triggerEditGroup(${group.id})">
+            <span>✏️</span>Edit
+          </button>
+        `;
+        groupsListWrapper.appendChild(row);
+      });
+    }
+
+    // Slide-up drawer actions
+    function showDrawerPanel(isEdit = false) {
+      editGroupMode = isEdit;
+      labelError.style.display = 'none';
+      inputNameField.classList.remove('invalid');
+
+      if (isEdit) {
+        drawerHeadline.textContent = 'Edit agent group';
+        btnSaveDrawer.textContent = 'Save changes';
+        btnDeleteGroup.style.display = 'block';
+      } else {
+        drawerHeadline.textContent = 'Create agent group';
+        btnSaveDrawer.textContent = 'Create group';
+        btnDeleteGroup.style.display = 'none';
+
+        // Clear forms
+        inputNameField.value = '';
+        inputDescField.value = '';
+        selectRoutingField.value = 'None';
+        checkboxRestrictedField.checked = false;
+        activeGroupId = null;
+      }
+
+      formPanelDrawer.classList.add('open');
+    }
+
+    function hideDrawerPanel() {
+      formPanelDrawer.classList.remove('open');
+    }
+
+    // Trigger Edit Flow
+    window.triggerEditGroup = function(id) {
+      activeGroupId = id;
+      const targetGroup = agentGroups.find(g => g.id === id);
+      if (targetGroup) {
+        inputNameField.value = targetGroup.name;
+        inputDescField.value = targetGroup.desc;
+        selectRoutingField.value = targetGroup.routing || 'None';
+        checkboxRestrictedField.checked = !!targetGroup.restricted;
+        showDrawerPanel(true);
+      }
+    };
+
+    // Save and updates
+    btnSaveDrawer.addEventListener('click', () => {
+      const name = inputNameField.value.trim();
+      const desc = inputDescField.value.trim();
+      const routing = selectRoutingField.value;
+      const restricted = checkboxRestrictedField.checked;
+
+      // Validation check
+      if (!name) {
+        inputNameField.classList.add('invalid');
+        labelError.style.display = 'block';
+        return;
+      } else {
+        inputNameField.classList.remove('invalid');
+        labelError.style.display = 'none';
+      }
+
+      if (editGroupMode) {
+        // Edit flow
+        agentGroups = agentGroups.map(g => g.id === activeGroupId ? { ...g, name, desc, routing, restricted } : g);
+        triggerToastAlert('Group updated successfully', 'success');
+      } else {
+        // Create flow
+        const nextId = agentGroups.length ? Math.max(...agentGroups.map(g => g.id)) + 1 : 1;
+        agentGroups.push({ id: nextId, name, desc, routing, restricted });
+        triggerToastAlert('Group created successfully', 'success');
+      }
+
+      renderGroupsList();
+      hideDrawerPanel();
+    });
+
+    // Delete flow
+    btnDeleteGroup.addEventListener('click', () => {
+      const isConfirmed = confirm('Are you sure you want to delete this group?');
+      if (isConfirmed) {
+        agentGroups = agentGroups.filter(g => g.id !== activeGroupId);
+        renderGroupsList();
+        hideDrawerPanel();
+        triggerToastAlert('Group deleted', 'delete');
+      }
+    });
+
+    // Toast alert handlers
+    function triggerToastAlert(message, type) {
+      // Clear outstanding timers
+      if (toastTimeout) {
+        clearTimeout(toastTimeout);
+      }
+
+      const iconText = type === 'success' ? '✓' : '✗';
+      toastWrapper.innerHTML = `
+        <div class="toast-card ${type}">
+          <span class="toast-icon">${iconText}</span>
+          <span>${message}</span>
+        </div>
+      `;
+
+      toastWrapper.classList.add('show');
+
+      // Dismiss alert after 2.5 seconds
+      toastTimeout = setTimeout(() => {
+        toastWrapper.classList.remove('show');
+      }, 2500);
+    }
+
+    // General Bindings
+    btnAddGroup.addEventListener('click', () => showDrawerPanel(false));
+    btnCancelDrawer.addEventListener('click', hideDrawerPanel);
+
+    // Initial Render Call
+    renderGroupsList();
+  </script>
+</body>
+</html>

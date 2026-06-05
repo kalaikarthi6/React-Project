@@ -122,6 +122,29 @@ async function init() {
       CREATE INDEX IF NOT EXISTS idx_email_notifications_event_type ON email_notifications(event_type);
     `);
     await client.query('COMMIT');
+
+    // Seed default email notifications
+    await client.query(`
+      INSERT INTO email_notifications (event_type, enabled) VALUES
+        ('New ticket created', true),
+        ('Ticket assigned to me', true),
+        ('Ticket status changed', true),
+        ('Ticket overdue reminder', false),
+        ('Ticket resolved', false),
+        ('New agent joined workspace', false),
+        ('Agent goes offline', true),
+        ('Send confirmation email on ticket create', true),
+        ('Send resolution email to customer', true),
+        ('Customer satisfaction survey after resolve', false)
+      ON CONFLICT (event_type) DO NOTHING;
+    `);
+
+    // Seed default workspace settings if empty
+    await client.query(`
+      INSERT INTO workspace_settings (workspace_name, url, timezone, language, date_format)
+      SELECT 'Certis ServiceDesk', 'https://certis.example.com', 'EST', 'English', 'MM/DD/YYYY'
+      WHERE NOT EXISTS (SELECT 1 FROM workspace_settings);
+    `);
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('Failed to initialize PostgreSQL schema', error);

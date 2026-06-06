@@ -2,12 +2,15 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const { pool, defaultDate, init, getUserByName, getGroupByName } = require('./db');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const authMiddleware = require('./middleware/authMiddleware');
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-const port = process.env.PORT || 4000;
+const port = process.env.PORT || 5000;
 
 function mapTicket(row) {
   if (!row) return null;
@@ -113,10 +116,9 @@ app.get('/api/tickets/:id', async (req, res) => {
   }
 });
 
-app.post('/api/tickets', async (req, res) => {
+app.post('/api/tickets', authMiddleware, async (req, res) => {
   try {
     const payload = req.body || {};
-    const requester = await getUserByName(payload.requester);
     const assigned = await getUserByName(payload.assignedTo);
     const group = await getGroupByName(payload.group);
     const now = defaultDate();
@@ -125,7 +127,7 @@ app.post('/api/tickets', async (req, res) => {
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id`,
       [
         payload.subject || 'No subject',
-        requester?.id || null,
+        req.user.id,
         assigned?.id || null,
         payload.status || 'Open',
         payload.priority || 'Low',
@@ -529,9 +531,34 @@ app.delete('/api/workflow-automator/:id', async (req, res) => {
   }
 });
 
+const DEFAULT_EMAIL_NOTIFICATIONS = [
+  { event_type: 'New ticket created',                         enabled: true  },
+  { event_type: 'Ticket assigned to me',                      enabled: true  },
+  { event_type: 'Ticket status changed',                      enabled: true  },
+  { event_type: 'Ticket overdue reminder',                    enabled: false },
+  { event_type: 'Ticket resolved',                            enabled: false },
+  { event_type: 'New agent joined workspace',                 enabled: false },
+  { event_type: 'Agent goes offline',                         enabled: true  },
+  { event_type: 'Send confirmation email on ticket create',   enabled: true  },
+  { event_type: 'Send resolution email to customer',          enabled: true  },
+  { event_type: 'Customer satisfaction survey after resolve',  enabled: false },
+];
+
 app.get('/api/email-notifications', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM email_notifications ORDER BY id');
+    let result = await pool.query('SELECT * FROM email_notifications ORDER BY id');
+    // Auto-seed defaults if table is empty (e.g. after a DB truncation)
+    if (result.rows.length === 0) {
+      for (const { event_type, enabled } of DEFAULT_EMAIL_NOTIFICATIONS) {
+        await pool.query(
+          `INSERT INTO email_notifications (event_type, enabled)
+           VALUES ($1, $2) ON CONFLICT (event_type) DO NOTHING`,
+          [event_type, enabled]
+        );
+      }
+      result = await pool.query('SELECT * FROM email_notifications ORDER BY id');
+      console.log(`[auto-seed] Inserted ${result.rows.length} default email_notifications records.`);
+    }
     res.json(result.rows.map(mapNotification));
   } catch (error) {
     console.error(error);
@@ -605,6 +632,8 @@ app.put('/api/workspace-settings/:id', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+app.use('/api/auth', require('./routes/authRoutes'));
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });

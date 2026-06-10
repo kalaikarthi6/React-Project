@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const { pool, defaultDate, init, getUserByName, getGroupByName } = require('./db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { sendTempPasswordEmail } = require('./utils/email');
 const authMiddleware = require('./middleware/authMiddleware');
 
 const app = express();
@@ -219,16 +220,33 @@ app.get('/api/users', async (req, res) => {
 });
 
 app.post('/api/users', async (req, res) => {
+  console.log('[POST /api/users] Invite agent request received');
   try {
     const payload = req.body || {};
     const now = defaultDate();
-    const insert = await pool.query(
-      'INSERT INTO users (name, email, role, status, avatar, created_at) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [payload.name || 'Unknown', payload.email || '', payload.role || 'Agent', payload.status || 'Active', payload.avatar || null, now]
+    // Generate temporary password
+    const tempPassword = `Certis@${Math.floor(10000 + Math.random() * 90000)}`;
+    const hash = await bcrypt.hash(tempPassword, 10);
+    // Insert into auth_users for login
+    const authInsert = await pool.query(
+      `INSERT INTO auth_users (email, password_hash, role, is_temp_password, temp_password_expires_at, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [payload.email, hash, payload.role || 'Agent', true, new Date(Date.now() + 48 * 60 * 60 * 1000), now]
     );
-    res.status(201).json(insert.rows[0]);
+    console.log('[POST /api/users] Auth user inserted');
+    // Insert into users profile table
+    const userInsert = await pool.query(
+      `INSERT INTO users (name, email, role, status, avatar, created_at, is_temp_password, temp_password_expires_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [payload.name || 'Unknown', payload.email, payload.role || 'Agent', payload.status || 'Active', payload.avatar || null, now, true, new Date(Date.now() + 48 * 60 * 60 * 1000)]
+    );
+    console.log('[POST /api/users] User profile inserted');
+    // Send email with temporary password
+    await sendTempPasswordEmail(payload.email, payload.name || 'User', tempPassword);
+    console.log('[POST /api/users] Temp password email sent to', payload.email);
+    res.status(201).json({ user: userInsert.rows[0], auth: authInsert.rows[0] });
   } catch (error) {
-    console.error(error);
+    console.error('[POST /api/users] Error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

@@ -1,6 +1,16 @@
 -- PostgreSQL schema for CERTIS ServiceDesk
 -- This schema matches the existing SQLite schema in backend/db.js.
 
+CREATE TABLE IF NOT EXISTS auth_users (
+  id SERIAL PRIMARY KEY,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  role VARCHAR(50) DEFAULT 'agent',
+  created_at TIMESTAMP DEFAULT NOW(),
+  is_temp_password BOOLEAN DEFAULT true,
+  temp_password_expires_at TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,
   name TEXT NOT NULL,
@@ -8,7 +18,9 @@ CREATE TABLE IF NOT EXISTS users (
   role TEXT NOT NULL,
   status TEXT NOT NULL,
   avatar TEXT,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  is_temp_password BOOLEAN DEFAULT true,
+  temp_password_expires_at TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS groups (

@@ -86,6 +86,12 @@ router.put('/change-password', async (req, res) => {
       [passwordHash, decoded.email]
     );
 
+    // Also activate the user profile
+    await pool.query(
+      `UPDATE users SET status = 'Active' WHERE email = $1`,
+      [decoded.email]
+    );
+
     res.json({ success: true, message: 'Password updated successfully' });
   } catch (error) {
     console.error('Change-password error:', error);

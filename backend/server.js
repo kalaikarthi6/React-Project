@@ -80,17 +80,34 @@ function mapNotification(row) {
   };
 }
 
-app.get('/api/tickets', async (req, res) => {
+app.get('/api/tickets', authMiddleware, async (req, res) => {
   try {
-    const result = await pool.query(`
+    let query = `
       SELECT t.*, r.name AS requester_name, r.email AS requester_email,
         a.name AS assigned_to_name, g.name AS group_name
       FROM tickets t
       LEFT JOIN users r ON t.requester_id = r.id
       LEFT JOIN users a ON t.assigned_to_id = a.id
       LEFT JOIN groups g ON t.group_id = g.id
-      ORDER BY t.created_at DESC
-    `);
+    `;
+    let queryParams = [];
+
+    if (req.user) {
+      const role = req.user.role;
+      if (role === 'Admin' || role === 'Viewer') {
+        // Admin and Viewer see all tickets
+      } else if (role === 'Agent') {
+        query += ` WHERE a.email = $1 OR t.assigned_to_id = $2`;
+        queryParams.push(req.user.email, req.user.id);
+      } else if (role === 'Employee') {
+        query += ` WHERE r.email = $1 OR t.requester_id = $2`;
+        queryParams.push(req.user.email, req.user.id);
+      }
+    }
+
+    query += ` ORDER BY t.created_at DESC`;
+
+    const result = await pool.query(query, queryParams);
     res.json(result.rows.map(mapTicket));
   } catch (error) {
     console.error(error);
